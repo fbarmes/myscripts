@@ -1,0 +1,23 @@
+#
+# this is a comment
+#
+#
+
+[my_platform:children]
+some_servers
+other_servers
+and_some_other_servers
+
+[some_servers]
+host1.mydomain.none
+host1.mydomain.none
+host1.mydomain.none
+
+[other_servers]
+host3.mydomain.none
+host2.mydomain.none
+
+[and_some_other_servers]
+host4.mydomain.none
+host5.mydomain.none
+host2.mydomain.none
