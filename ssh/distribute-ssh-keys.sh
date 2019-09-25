@@ -32,9 +32,11 @@ declare DRY_RUN=false
 declare ACCEPT_HOST_KEY=false
 declare SSH_PUBLIC_KEY_FILE=""
 declare SSH_REMOTE_USER=""
+declare SSH_REMOTE_PASSWORD=""
 declare SSH_REMOTE_HOST_ARG="";
 
 declare SSH_REMOTE_HOSTS=""
+declare PROMPT_FOR_PASSWORD="false"
 
 #-------------------------------------------------------------------------------
 # usage function
@@ -49,7 +51,8 @@ Usage:
 Available options:
     -h, --help            : display this help and exit
     -v, --verbose         : verbose output
-    --accept-host-key     : always accept host key
+    -a,--accept-host-key  : always accept host key
+    -p, --prompt-password : prompt for password and reuse for every host
 
 END_HELP
 }
@@ -58,8 +61,8 @@ END_HELP
 # handle command line options
 #-------------------------------------------------------------------------------
 get_options() {
-  readonly OPTS_SHORT="d,h,v"
-  readonly OPTS_LONG="dry-run,help,verbose,accept-host-key"
+  readonly OPTS_SHORT="d,h,v,a,p"
+  readonly OPTS_LONG="dry-run,help,verbose,accept-host-key,prompt-password"
   GETOPT_RESULT=`getopt -o ${OPTS_SHORT} --long ${OPTS_LONG} -- $@`
   GETOPT_SUCCESS=$?
   NARGS=3
@@ -78,7 +81,8 @@ get_options() {
         -h|--help) usage;                   shift; exit 0; ;;
         -v|--verbose) VERBOSE=true;         shift;  ;;
         -d|--dry-run) DRY_RUN=true;         shift;  ;;
-        --accept-host-key) ACCEPT_HOST_KEY=true; shift; ;;
+        -a|--accept-host-key) ACCEPT_HOST_KEY=true; shift; ;;
+        -p|--prompt-password)  PROMPT_FOR_PASSWORD=true; shift; ;;
         --) shift; break; ;;
         *) echo "Invalid option $1"; exit 1; ;;
     esac
@@ -251,12 +255,35 @@ check_remote_host_reachable() {
 }
 
 #-------------------------------------------------------------------------------
+# prompt for password
+#-------------------------------------------------------------------------------
+read-password() {
+  read -s -p "Enter password for user [${SSH_REMOTE_USER}]: " SSH_REMOTE_PASSWORD
+  echo ""
+}
+
+
+#-------------------------------------------------------------------------------
 function send_ssh_key() {
   local readonly key=$1
   local readonly user=$2
+  local readonly password=${SSH_REMOTE_PASSWORD}
   local readonly host=$3
 
   echo "send ${key} to ${user}@${host}"
+
+  SSH_OPTS=""
+  [ ${ACCEPT_HOST_KEY} = true ] && SSH_OPTS="${SSH_OPTS} -oStrictHostKeyChecking=no"
+  SSH_OPTS="${SSH_OPTS} ${user}@${host}"
+
+
+  local ssh_command="ssh ${SSH_OPTS}"
+
+  if [[ ${password} != ""  ]] ; then
+    ssh_command="sshpass -p ${password} ssh ${SSH_OPTS}"
+  else
+    ssh_command="ssh ${SSH_OPTS}"
+  fi
 
   if [[ ${DRY_RUN} = "true" ]] ; then
     echo "DRY RUN: skip send_ssh_key"
@@ -264,10 +291,7 @@ function send_ssh_key() {
   fi
 
 
-  SSH_OPTS=""
-  [ ${ACCEPT_HOST_KEY} = true ] && SSH_OPTS="${SSH_OPTS} -oStrictHostKeyChecking=no"
-
-  cat ${key} | ssh ${SSH_OPTS} ${user}@${host} \
+  cat ${key} | ${ssh_command} \
     'mkdir -p ~/.ssh && \
     chmod 700 ~/.ssh && \
     cat >> ~/.ssh/authorized_keys && \
@@ -288,10 +312,13 @@ main() {
     echo_vars
   fi
 
-
-
   #-- check key
   check_ssh_key_file ${SSH_PUBLIC_KEY_FILE}
+
+  #-- prompt for password
+  if [[ ${PROMPT_FOR_PASSWORD} == "true"  ]] ; then
+    read-password
+  fi
 
   #-- start distribution
   for host in ${SSH_REMOTE_HOSTS} ; do
