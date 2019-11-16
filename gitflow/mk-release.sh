@@ -18,6 +18,7 @@ WORK_DIR=$(pwd)
 # global vars
 #-------------------------------------------------------------------------------
 GIT_RELEASE_NAME=""
+GIT_CURRENT_VERSION=""
 GIT_NEXT_VERSION=""
 GIT_REMOTE_NAME="origin"
 
@@ -31,7 +32,7 @@ VERBOSE=false
 #-------------------------------------------------------------------------------
 usage() {
   cat <<END_HELP
-Usage: ${SCRIPT_NAME} <release name> <next version>
+Usage: ${SCRIPT_NAME} <current version> <next version>
 
 Available options:
     -h, --help            : display this help and exit
@@ -78,9 +79,10 @@ get_options() {
   fi
 
   #-- command list
-  GIT_RELEASE_NAME=$1
-  GIT_NEXT_VERSION=$2
+  GIT_CURRENT_VERSION=${1}
+  GIT_NEXT_VERSION=${2}
 
+  GIT_RELEASE_NAME="v${GIT_CURRENT_VERSION}"
 }
 
 
@@ -92,6 +94,7 @@ echo_vars() {
   echo "VERBOSE=${VERBOSE}"
   echo "---------------------"
   echo "GIT_RELEASE_NAME=${GIT_RELEASE_NAME}"
+  echo "GIT_CURRENT_VERSION=${GIT_CURRENT_VERSION}"
   echo "GIT_NEXT_VERSION=${GIT_NEXT_VERSION}"
   echo "GIT_REMOTE_NAME=${GIT_REMOTE_NAME}"
 }
@@ -148,6 +151,9 @@ check_prerequisites() {
   fi
   echo "OK"
 
+
+  #-- TODO : check both develop and master are locally up to date
+
   echo ""
 }
 
@@ -160,6 +166,7 @@ make_release() {
 
   echo "Make release : "
   echo "  Release name : ${GIT_RELEASE_NAME}"
+  echo "  Current version : ${GIT_CURRENT_VERSION}"
   echo "  Next version : ${GIT_NEXT_VERSION}"
 
   if [ ${HAS_REMOTE} -eq 1  ] ; then
@@ -180,33 +187,47 @@ make_release() {
   set -x
 
   #-- prepare
+  echo ""
+  echo "STEP: prepare"
   git checkout develop
   if [ ${HAS_REMOTE} -eq 1  ] ; then
     git pull ${GIT_REMOTE_NAME} develop
   fi
 
   #-- start release
+  echo ""
+  echo "STEP: git flow release start"
   git flow release start ${GIT_RELEASE_NAME}
 
   #--- finalize release
-  echo ${GIT_RELEASE_NAME} > VERSION
+  echo ""
+  echo "STEP: update version in release branch"
+  echo ${GIT_CURRENT_VERSION} > VERSION
   git add VERSION
   git commit -m "update version"
 
   #-- publish and finish release
   if [ ${HAS_REMOTE} -eq 1  ] ; then
+    echo ""
+    echo "STEP: git flow release publish"
     git flow release publish ${GIT_RELEASE_NAME}
   fi
 
   #--finish release
+  echo ""
+  echo "STEP: git flow release finish"
   export GIT_MERGE_AUTOEDIT=no
   git flow release finish -m "release ${GIT_RELEASE_NAME}" ${GIT_RELEASE_NAME}
   unset GIT_MERGE_AUTOEDIT
 
   #-- remove tag created by release finish, will do mine later
+  echo ""
+  echo "STEP: remove tag created by gitflow"
   git tag -d ${GIT_RELEASE_NAME}
 
   #-- push master
+  echo ""
+  echo "STEP: make tag again from master"
   git checkout master
   if [ ${HAS_REMOTE} -eq 1  ] ; then
     git push ${GIT_REMOTE_NAME} master
@@ -219,11 +240,15 @@ make_release() {
   fi
 
   #-- cleanup
+  echo ""
+  echo "STEP: cleanup"
   if [ ${HAS_REMOTE} -eq 1  ] ; then
     git push --delete ${GIT_REMOTE_NAME} release/${GIT_RELEASE_NAME}
   fi
 
   #--- prepare for next development cycle
+  echo ""
+  echo "STEP: prepare for next cycle"
   git checkout develop
   echo ${GIT_NEXT_VERSION} > VERSION
   git add VERSION && git commit -m "update version"
