@@ -100,9 +100,8 @@ get_options() {
   SSH_REMOTE_USER=$1; shift
   SSH_REMOTE_HOST_ARG=$@;
 
-  #-- handle host arguments
-  SSH_REMOTE_HOSTS=$(extract_hosts ${SSH_REMOTE_HOST_ARG})
 
+  SSH_REMOTE_HOSTS=$(extract_hosts ${SSH_REMOTE_HOST_ARG})
 }
 
 #-------------------------------------------------------------------------------
@@ -143,16 +142,20 @@ function parse_host_file() {
   declare -r input_file=${1}
   local result=""
 
+  echo ""
   while IFS= read -r line ; do
 
     # ignore comments
     [[ ${line} =~ ^#.*  ]] && continue;
 
-    # remove lead and trailing whitespaces from line
-    line=$(trim "${line}")
-
     # ignore empty lines
     [[ -z ${line}   ]] && continue;
+
+    # get first group of characters
+    line=$(echo ${line} | awk '{print $1}')
+
+    # remove lead and trailing whitespaces from line
+    line=$(trim ${line})
 
     # ignore group declaration
     [[ ${line} =~ ^\[.*\]  ]] && continue;
@@ -162,7 +165,7 @@ function parse_host_file() {
 
   # remove any duplicates
   # result=$(echo $result | tr " " "\n" | sort -u | tr "\n" " ")
-
+  echo ""
   echo ${result}
 }
 
