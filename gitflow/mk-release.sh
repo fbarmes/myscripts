@@ -18,10 +18,11 @@ WORK_DIR=$(pwd)
 #-------------------------------------------------------------------------------
 # global vars
 #-------------------------------------------------------------------------------
-GIT_RELEASE_NAME=""
-GIT_CURRENT_VERSION=""
-GIT_NEXT_VERSION=""
-GIT_REMOTE_NAME="origin"
+declare GIT_RELEASE_NAME=""
+declare GIT_RELEASE_NAME_PREFIX=""
+declare GIT_CURRENT_VERSION=""
+declare GIT_NEXT_VERSION=""
+declare GIT_REMOTE_NAME="origin"
 
 #-------------------------------------------------------------------------------
 # global vars
@@ -40,6 +41,7 @@ Available options:
     -v, --verbose         : verbose output
     -d, --dry-run         : do not execute script, just displays the commands
     -r, --remote          : name of the remote
+    -p, --prefix          : prefix to add before release name
 
 END_HELP
 }
@@ -48,8 +50,8 @@ END_HELP
 # handle command line options
 #-------------------------------------------------------------------------------
 get_options() {
-  readonly OPTS_SHORT="d,h,v,r:"
-  readonly OPTS_LONG="help,verbose,dry-run,remote:"
+  readonly OPTS_SHORT="d,h,v,r:,p:"
+  readonly OPTS_LONG="help,verbose,dry-run,remote:,prefix:"
   GETOPT_RESULT=`getopt -o ${OPTS_SHORT} --long ${OPTS_LONG} -- $@`
   GETOPT_SUCCESS=$?
   NARGS=2
@@ -68,6 +70,7 @@ get_options() {
         -h|--help) usage;                   shift; exit 0; ;;
         -v|--verbose) VERBOSE=true;         shift;  ;;
         -r|--remote)  GIT_REMOTE_NAME=$2;   shift 2; ;;
+        -p|--prefix)  GIT_RELEASE_NAME_PREFIX=$2;  shift 2; ;;
         --) shift; break; ;;
         *) echo "Invalid option $1"; exit 1; ;;
     esac
@@ -82,8 +85,7 @@ get_options() {
   #-- command list
   GIT_CURRENT_VERSION=${1}
   GIT_NEXT_VERSION=${2}
-
-  GIT_RELEASE_NAME="${GIT_CURRENT_VERSION}"
+  GIT_RELEASE_NAME="${GIT_RELEASE_NAME_PREFIX}${GIT_CURRENT_VERSION}"
 }
 
 
