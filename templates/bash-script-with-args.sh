@@ -11,21 +11,21 @@
 #-- SCRIPT_NAME: name of this file
 declare -r SCRIPT_NAME=$(basename $(readlink -f $0));
 
-#-- INSTALL_DIR: absolute path to this script
-declare -r INSTALL_DIR=$( cd "$( dirname "${0}" )" && pwd )
+#-- SCRIPT_HOME: absolute path to this script
+declare -r SCRIPT_HOME=$( cd $( dirname "${0}" ) && pwd )
 
 
 #-------------------------------------------------------------------------------
 # global vars
 #-------------------------------------------------------------------------------
-VERBOSE=false
-DRY_RUN=false
+declare VERBOSE=false
+declare DRY_RUN=false
 
 
 #-------------------------------------------------------------------------------
 # usage function
 #-------------------------------------------------------------------------------
-usage() {
+function usage() {
   cat <<END_HELP
 
 
@@ -42,7 +42,7 @@ END_HELP
 #-------------------------------------------------------------------------------
 # handle command line options
 #-------------------------------------------------------------------------------
-get_options() {
+function get_options() {
   readonly OPTS_SHORT="d,h,v"
   readonly OPTS_LONG="help,verbose,dry-run"
   GETOPT_RESULT=`getopt -o ${OPTS_SHORT} --long ${OPTS_LONG} -- $@`
@@ -80,8 +80,8 @@ get_options() {
 
 
 #-------------------------------------------------------------------------------
-echo_vars() {
-  echo "INSTALL_DIR=${INSTALL_DIR}"
+function echo_vars() {
+  echo "SCRIPT_HOME=${SCRIPT_HOME}"
   echo "SCRIPT_NAME=${SCRIPT_NAME}"
   echo "---------------------"
   echo "VERBOSE=${VERBOSE}"
@@ -93,7 +93,7 @@ echo_vars() {
 #-------------------------------------------------------------------------------
 # echov <message>: echo message if verbose mode is enabled
 #-------------------------------------------------------------------------------
-echov() {
+function echov() {
   local readonly message=$1
   if [ $VERBOSE = true ]; then
     echo "# ${message}"
@@ -103,7 +103,7 @@ echov() {
 #-------------------------------------------------------------------------------
 # main function
 #-------------------------------------------------------------------------------
-main() {
+function main() {
   get_options $@
 
   if [ $VERBOSE = true ] ; then
