@@ -64,7 +64,9 @@ function main() {
   test_get_version "one-two-three-12.152.tgz" "12.152"
   test_get_version "one-two-three-1.0.2-SNAPSHOT.tgz" "1.0.2-SNAPSHOT"
   test_get_version "one_two-three-134.65.2.tgz" "134.65.2"
-
+  test_get_version "/abs/path/to/my-package-1.0.2.tgz" "1.0.2"
+  test_get_version "../../rel/path/to/my-package-1.0.2.tgz" "1.0.2"
+  test_get_version "~/rel/path/to/my-package-1.0.2.tgz" "1.0.2"
 }
 
 
